@@ -28,4 +28,7 @@ export class UserService {
 
     return user.save();
   }
+  async findByEmail(email: string) {
+  return this.userModel.findOne({ email });
+}
 }
