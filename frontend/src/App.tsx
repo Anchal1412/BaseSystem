@@ -1,43 +1,22 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import Signup from './Signup';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Home from './views/Home';
+import Signup from './views/SignupView';
+import Login from './views/LoginView';
+import Dashboard from './views/Dashboard';
 import './App.css';
 
-function App() {
+const App: React.FC = () => {
   return (
-    <Router>
-      <div className="App">
-        <nav className="navbar">
-          <div className="nav-container">
-            <Link to="/" className="nav-logo">BaseSystem</Link>
-            <ul className="nav-menu">
-              <li className="nav-item">
-                <Link to="/" className="nav-link">Home</Link>
-              </li>
-              <li className="nav-item">
-                <Link to="/signup" className="nav-link">Sign Up</Link>
-              </li>
-            </ul>
-          </div>
-        </nav>
-
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/signup" element={<Signup />} />
-        </Routes>
-      </div>
-    </Router>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </BrowserRouter>
   );
-}
-
-function Home() {
-  return (
-    <div className="home-container">
-      <h1>Welcome to BaseSystem</h1>
-      <p>A simple authentication system built with React and NestJS</p>
-      <Link to="/signup" className="cta-button">Get Started</Link>
-    </div>
-  );
-}
+};
 
 export default App;
