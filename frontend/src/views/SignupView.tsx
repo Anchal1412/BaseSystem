@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signup } from '../controllers/authController';
-import '../Signup.css';
+import './Signup.css';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
