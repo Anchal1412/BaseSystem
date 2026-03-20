@@ -1,12 +1,30 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { LoginUserDto } from 'src/user/dto/login-user.dto';
+import { blacklistedTokens } from './blacklist';
+import type { Request } from 'express';
 
 @Controller()
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('login')
-  login(@Body() body: any) {
+  login(@Body() body: LoginUserDto) {
     return this.authService.login(body.email, body.password);
+  }
+
+  @Post('logout')
+  logout(@Req() req: Request) {
+    const authHeader = req.headers.authorization;
+
+    if (typeof authHeader === 'string') {
+      const token = authHeader.split(' ')[1];
+
+      if (token) {
+        blacklistedTokens.add(token);
+      }
+    }
+
+    return { message: 'Logged out successfully' };
   }
 }
