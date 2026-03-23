@@ -116,6 +116,10 @@ const Dashboard: React.FC = () => {
           <Typography level="h2">Users Dashboard</Typography>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button onClick={() => navigate('/chat')}>
+              💬 Chat
+            </Button>
+
             <Button onClick={handleRefresh}>
               🔄 Refresh
             </Button>

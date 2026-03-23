@@ -25,140 +25,152 @@ interface JwtPayload {
     credentials: true,
   },
 })
-export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
   constructor(
-    private jwtService: JwtService,
     private chatService: ChatService,
+    private jwtService: JwtService,
   ) {}
 
   private getClientData(client: Socket): SocketData {
     return client.data as SocketData;
   }
 
+  // 🔥 HANDLE CONNECTION (JWT AUTH)
   handleConnection(client: Socket) {
     try {
-      const token = client.handshake.auth.token as string | undefined;
+      let token = client.handshake.auth.token as string;
+
       if (!token) {
+        console.log('No token provided');
         client.disconnect();
         return;
       }
 
+      // ✅ Clean token (important fix)
+      token = token.replace(/'/g, '').trim();
+
       const payload = this.jwtService.verify<JwtPayload>(token);
+
       const data = client.data as SocketData;
       data.userId = payload.sub;
       data.email = payload.email;
 
-      console.log(`User ${payload.email} (${client.id}) connected`);
+      console.log(`✅ User connected: ${payload.email}`);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      console.error('WebSocket connection error:', errorMessage);
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ WebSocket Auth Error:', errMsg);
       client.disconnect();
     }
   }
 
+  // 🔥 HANDLE DISCONNECT
   handleDisconnect(client: Socket) {
     const data = this.getClientData(client);
-    console.log(`User ${data.email} (${client.id}) disconnected`);
+
+    console.log(`❌ User disconnected: ${data?.email}`);
+
     this.chatService.removeUserFromAllRooms(client.id);
   }
 
+  // 🔥 JOIN ROOM
   @SubscribeMessage('join_room')
-  handleJoinRoom(client: Socket, data: { roomId: string }) {
-    const { roomId } = data;
+  handleJoinRoom(client: Socket, payload: { roomId: string }) {
+    const { roomId } = payload;
     const clientData = this.getClientData(client);
-    const userId = clientData.userId;
-    const email = clientData.email;
 
-    // Join the socket to the room
+    if (!roomId) return;
+
     client.join(roomId);
 
-    // Add user to room in service
     this.chatService.addUserToRoom(roomId, {
       socketId: client.id,
-      userId,
-      email,
+      userId: clientData.userId,
+      email: clientData.email,
     });
 
-    // Notify other users in the room
+    // System message
     this.server.to(roomId).emit('receive_message', {
-      message: `${email} joined the room`,
+      message: `${clientData.email} joined the room`,
       sender: 'System',
       senderId: 'system',
       timestamp: new Date(),
       isSystemMessage: true,
     });
 
-    // Send current room users to all clients in the room
+    // Send updated users list
     const roomUsers = this.chatService.getRoomUsers(roomId);
     this.server.to(roomId).emit('room_users', {
       users: roomUsers,
       count: roomUsers.length,
     });
 
-    console.log(`User ${email} joined room ${roomId}`);
+    console.log(`👤 ${clientData.email} joined room ${roomId}`);
   }
 
+  // 🔥 LEAVE ROOM
   @SubscribeMessage('leave_room')
-  handleLeaveRoom(client: Socket, data: { roomId: string }) {
-    const { roomId } = data;
+  handleLeaveRoom(client: Socket, payload: { roomId: string }) {
+    const { roomId } = payload;
     const clientData = this.getClientData(client);
-    const email = clientData.email;
 
     client.leave(roomId);
     this.chatService.removeUserFromRoom(roomId, client.id);
 
-    // Notify other users
     this.server.to(roomId).emit('receive_message', {
-      message: `${email} left the room`,
+      message: `${clientData.email} left the room`,
       sender: 'System',
       senderId: 'system',
       timestamp: new Date(),
       isSystemMessage: true,
     });
 
-    // Update room users
     const roomUsers = this.chatService.getRoomUsers(roomId);
     this.server.to(roomId).emit('room_users', {
       users: roomUsers,
       count: roomUsers.length,
     });
 
-    console.log(`User ${email} left room ${roomId}`);
+    console.log(`🚪 ${clientData.email} left room ${roomId}`);
   }
 
+  // 🔥 SEND MESSAGE
   @SubscribeMessage('send_message')
-  handleSendMessage(client: Socket, data: { roomId: string; message: string }) {
-    const { roomId, message } = data;
+  handleSendMessage(
+    client: Socket,
+    payload: { roomId: string; message: string },
+  ) {
+    const { roomId, message } = payload;
     const clientData = this.getClientData(client);
-    const userId = clientData.userId;
-    const email = clientData.email;
 
-    const messagePayload = {
+    if (!message.trim()) return;
+
+    const messageData = {
       message,
-      sender: email,
-      senderId: userId,
+      sender: clientData.email,
+      senderId: clientData.userId,
       timestamp: new Date(),
       isSystemMessage: false,
     };
 
-    // Broadcast to all users in the room
-    this.server.to(roomId).emit('receive_message', messagePayload);
+    this.server.to(roomId).emit('receive_message', messageData);
 
-    console.log(`Message from ${email} in room ${roomId}: ${message}`);
+    console.log(`💬 ${clientData.email} in ${roomId}: ${message}`);
   }
 
+  // 🔥 GET USERS IN ROOM
   @SubscribeMessage('get_room_users')
-  handleGetRoomUsers(client: Socket, data: { roomId: string }) {
-    const { roomId } = data;
-    const roomUsers = this.chatService.getRoomUsers(roomId);
+  handleGetRoomUsers(client: Socket, payload: { roomId: string }) {
+    const { roomId } = payload;
+
+    const users = this.chatService.getRoomUsers(roomId);
 
     client.emit('room_users', {
-      users: roomUsers,
-      count: roomUsers.length,
+      users,
+      count: users.length,
     });
   }
 }

@@ -6,8 +6,8 @@ import { ChatService } from './chat.service';
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your-secret-key',
-      signOptions: { expiresIn: '24h' },
+      secret: 'mySecretKey', // ✅ SAME SECRET (FIX HERE 🔥)
+      signOptions: { expiresIn: '1d' },
     }),
   ],
   providers: [ChatGateway, ChatService],
