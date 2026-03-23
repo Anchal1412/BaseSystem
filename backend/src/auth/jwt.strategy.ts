@@ -9,7 +9,6 @@ import type { Request } from 'express';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
     super({
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: 'mySecretKey',
