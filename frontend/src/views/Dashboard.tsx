@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchUsers } from '../controllers/authController';
+import { fetchUsers, logout } from '../controllers/authController';
 import { User } from '../models/User';
-import './Dashboard.css';
-import { logout } from '../controllers/authController';
+
+import {
+  Box,
+  Typography,
+  Button,
+  Table,
+  Sheet,
+} from '@mui/joy';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -21,7 +27,6 @@ const Dashboard: React.FC = () => {
         const data = await fetchUsers(token);
         setUsers(data);
       } catch (err: any) {
-        // If unauthorized, redirect to login
         if (err.message?.toLowerCase().includes('unauthorized')) {
           localStorage.removeItem('token');
           navigate('/login');
@@ -35,18 +40,16 @@ const Dashboard: React.FC = () => {
   }, [navigate]);
 
   const handleLogout = async () => {
-  try {
-    const token = localStorage.getItem('token') || '';
+    try {
+      const token = localStorage.getItem('token') || '';
+      await logout(token);
+      localStorage.removeItem('token');
+      navigate('/');
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
 
-    await logout(token); // ⭐ backend call
-
-    localStorage.removeItem('token');
-
-    navigate('/');
-  } catch (err: any) {
-    alert(err.message);
-  }
-};
   const handleRefresh = async () => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -54,34 +57,61 @@ const Dashboard: React.FC = () => {
         const data = await fetchUsers(token);
         setUsers(data);
         alert('Users refreshed successfully');
-      } catch (err: any) {
+      } catch {
         alert('Failed to refresh users');
       }
     }
   };
 
   return (
-    <div className="dashboard-page">
-      <div className="dashboard-container">
-        <div className="dashboard-header">
-          <h2>Users Dashboard</h2>
-          <div className="dashboard-actions">
-            <button className="dashboard-btn btn-refresh" onClick={handleRefresh}>
-              🔄 Refresh
-            </button>
-            <button className="dashboard-btn btn-logout" onClick={handleLogout}>
-              🚪 Logout
-            </button>
-          </div>
-        </div>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        p: 3,
+      }}
+    >
+      <Sheet
+        sx={{
+          maxWidth: 1200,
+          mx: 'auto',
+          p: 3,
+          borderRadius: '20px',
+          boxShadow: 'lg',
+        }}
+      >
+        {/* Header */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
+          <Typography level="h2">Users Dashboard</Typography>
 
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button onClick={handleRefresh}>
+              🔄 Refresh
+            </Button>
+
+            <Button color="danger" onClick={handleLogout}>
+              🚪 Logout
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Table */}
         {users.length === 0 ? (
-          <div className="dashboard-empty">
-            <p>No users found.</p>
-          </div>
+          <Box sx={{ textAlign: 'center', py: 5 }}>
+            <Typography>No users found.</Typography>
+          </Box>
         ) : (
-          <div className="dashboard-table-wrapper">
-            <table className="dashboard-table">
+          <Sheet variant="outlined" sx={{ overflow: 'auto' }}>
+            <Table hoverRow>
               <thead>
                 <tr>
                   <th>Name</th>
@@ -89,24 +119,36 @@ const Dashboard: React.FC = () => {
                   <th>Status</th>
                 </tr>
               </thead>
+
               <tbody>
                 {users.map((user) => (
                   <tr key={user._id}>
                     <td>{user.name}</td>
                     <td>{user.email}</td>
                     <td>
-                      <span className={`status-badge ${user.status ? 'status-active' : 'status-inactive'}`}>
+                      <Box
+                        sx={{
+                          display: 'inline-block',
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: '20px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          bgcolor: user.status ? '#d4edda' : '#f8d7da',
+                          color: user.status ? '#155724' : '#721c24',
+                        }}
+                      >
                         {user.status ? '✓ Active' : '✗ Inactive'}
-                      </span>
+                      </Box>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+            </Table>
+          </Sheet>
         )}
-      </div>
-    </div>
+      </Sheet>
+    </Box>
   );
 };
 

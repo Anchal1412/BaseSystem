@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { signup } from '../controllers/authController';
-import './Signup.css';
+
+import {
+  Box,
+  Typography,
+  Input,
+  Button,
+  Sheet,
+} from '@mui/joy';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
+
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -22,28 +30,113 @@ const Signup: React.FC = () => {
       alert('Signup successful. You can now log in.');
       navigate('/login');
     } catch (err: any) {
-      console.error('Signup error', err);
       alert(err.response?.data?.message || err.message || 'Signup failed');
     }
   };
 
   return (
-    <div className="signup-page">
-      <div className="signup-container">
-        <h2 className="signup-title">Create Account</h2>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2,
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      }}
+    >
+      <Sheet
+        sx={{
+          width: '100%',
+          maxWidth: 520,
+          p: 4,
+          borderRadius: '20px',
+          boxShadow: 'lg',
+          backdropFilter: 'blur(14px)',
+        }}
+      >
+        <Typography
+          level="h2"
+          sx={{
+            textAlign: 'center',
+            mb: 2,
+            fontWeight: 700,
+          }}
+        >
+          Create Account
+        </Typography>
 
-        <form className="signup-form" onSubmit={handleSubmit}>
-          <input name="name" placeholder="Name" onChange={handleChange} required />
-          <input name="email" type="email" placeholder="Email" onChange={handleChange} required />
-          <input name="password" type="password" placeholder="Password" onChange={handleChange} required />
-          <button type="submit">Signup</button>
-        </form>
+        {/* Form */}
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            display: 'grid',
+            gap: 2,
+          }}
+        >
+          <Input
+            name="name"
+            placeholder="Name"
+            onChange={handleChange}
+            required
+          />
 
-        <p className="signup-note">
-          Already have an account? <Link to="/login">Login</Link>
-        </p>
-      </div>
-    </div>
+          <Input
+            name="email"
+            type="email"
+            placeholder="Email"
+            onChange={handleChange}
+            required
+          />
+
+          <Input
+            name="password"
+            type="password"
+            placeholder="Password"
+            onChange={handleChange}
+            required
+          />
+
+          <Button
+            type="submit"
+            size="lg"
+            sx={{
+              mt: 1,
+              fontWeight: 700,
+              background:
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: 'md',
+              },
+            }}
+          >
+            Signup
+          </Button>
+        </Box>
+
+        {/* Footer */}
+        <Typography
+          sx={{
+            textAlign: 'center',
+            mt: 2,
+          }}
+        >
+          Already have an account?{' '}
+          <Link
+            to="/login"
+            style={{
+              color: '#5469f2',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            Login
+          </Link>
+        </Typography>
+      </Sheet>
+    </Box>
   );
 };
 
