@@ -1,58 +1,84 @@
 import { Injectable } from '@nestjs/common';
 
 interface RoomUser {
-  socketId: string;
   userId: string;
   name: string;
+  socketIds: string[];
 }
 
 interface ChatRoom {
-  users: RoomUser[];
+  users: Map<string, RoomUser>;
 }
 
 @Injectable()
 export class ChatService {
   private rooms: Map<string, ChatRoom> = new Map();
 
-  addUserToRoom(roomId: string, user: RoomUser) {
+  addUserToRoom(
+    roomId: string,
+    user: { socketId: string; userId: string; name: string })
+  {
     if (!this.rooms.has(roomId)) {
-      this.rooms.set(roomId, { users: [] });
+      this.rooms.set(roomId, { users: new Map() });
     }
 
     const room = this.rooms.get(roomId)!;
-    // Check if user already exists
-    const existingUser = room.users.find((u) => u.socketId === user.socketId);
-    if (!existingUser) {
-      room.users.push(user);
+
+    const existingUser = room.users.get(user.userId);
+
+    if (existingUser) {
+      existingUser.socketIds.push(user.socketId);
+    } else {
+      room.users.set(user.userId, {
+        userId: user.userId,
+        name: user.name,
+        socketIds: [user.socketId],
+      });
     }
   }
 
   removeUserFromRoom(roomId: string, socketId: string) {
     const room = this.rooms.get(roomId);
-    if (room) {
-      room.users = room.users.filter((u) => u.socketId !== socketId);
-      // Remove empty rooms
-      if (room.users.length === 0) {
-        this.rooms.delete(roomId);
+    if (!room) return;
+
+    room.users.forEach((user, userId) => {
+      user.socketIds = user.socketIds.filter((id) => id !== socketId);
+
+      if (user.socketIds.length === 0) {
+        room.users.delete(userId);
       }
+    });
+
+    if (room.users.size === 0) {
+      this.rooms.delete(roomId);
     }
   }
 
   removeUserFromAllRooms(socketId: string) {
     this.rooms.forEach((room, roomId) => {
-      room.users = room.users.filter((u) => u.socketId !== socketId);
-      if (room.users.length === 0) {
+      room.users.forEach((user, userId) => {
+        user.socketIds = user.socketIds.filter((id) => id !== socketId);
+
+        if (user.socketIds.length === 0) {
+          room.users.delete(userId);
+        }
+      });
+
+      if (room.users.size === 0) {
         this.rooms.delete(roomId);
       }
     });
   }
 
-  getRoomUsers(roomId: string): RoomUser[] {
+  getRoomUsers(roomId: string) {
     const room = this.rooms.get(roomId);
-    return room ? room.users : [];
+    if (!room) return [];
+
+    return Array.from(room.users.values());
   }
 
   getRoomCount(roomId: string): number {
-    return this.getRoomUsers(roomId).length;
+    const room = this.rooms.get(roomId);
+    return room ? room.users.size : 0;
   }
 }

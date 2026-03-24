@@ -21,7 +21,7 @@ interface JwtPayload {
   name: string;
 }
 
-const DEBUG = false; //  set true if you want logs
+const DEBUG = false;
 
 @WebSocketGateway({
   cors: {
