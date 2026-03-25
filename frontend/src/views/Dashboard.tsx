@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchUsers, logout } from '../controllers/authController';
@@ -90,7 +91,7 @@ const Dashboard: React.FC = () => {
   return (
     <Box
       sx={{
-        height: '100vh',
+        minHeight: '100vh',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         p: 3,
       }}
@@ -102,6 +103,7 @@ const Dashboard: React.FC = () => {
           p: 3,
           borderRadius: '20px',
           boxShadow: 'lg',
+          position: 'relative', // ✅ important for overlay
         }}
       >
         {/* Header */}
@@ -115,7 +117,9 @@ const Dashboard: React.FC = () => {
             gap: 2,
           }}
         >
-          <Typography level="h2">{ischatmode ? 'Chat' : 'Users Dashboard'}</Typography>
+          <Typography level="h2">
+            {ischatmode ? 'Chat' : 'Users Dashboard'}
+          </Typography>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button onClick={() => setisChatMode((prev) => !prev)}>
@@ -132,53 +136,77 @@ const Dashboard: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Table */}
-        {ischatmode ? (
-          <Chat />
-        ) : users.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 5 }}>
-            <Typography>No users found.</Typography>
-          </Box>
-        ) : (
-          <Sheet variant="outlined" sx={{ overflow: 'auto' }}>
-            <Table hoverRow>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
+        {/* CONTENT WRAPPER */}
+        <Box sx={{ position: 'relative' }}>
+          
+          {/* Dashboard Content */}
+          <Box
+            sx={{
+              visibility: ischatmode ? 'hidden' : 'visible',
+            }}
+          >
+            {users.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 5 }}>
+                <Typography>No users found.</Typography>
+              </Box>
+            ) : (
+              <Sheet variant="outlined" sx={{ overflow: 'auto' }}>
+                <Table hoverRow>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
 
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user._id}>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>
-                      <Box
-                        sx={{
-                          display: 'inline-block',
-                          px: 1.5,
-                          py: 0.5,
-                          borderRadius: '20px',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          bgcolor: user.status ? '#d4edda' : '#f8d7da',
-                          color: user.status ? '#155724' : '#721c24',
-                        }}
-                      >
-                        {user.status ? '✓ Active' : '✗ Inactive'}
-                      </Box>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </Sheet>
-        )}
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user._id}>
+                        <td>{user.name}</td>
+                        <td>{user.email}</td>
+                        <td>
+                          <Box
+                            sx={{
+                              display: 'inline-block',
+                              px: 1.5,
+                              py: 0.5,
+                              borderRadius: '20px',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              bgcolor: user.status ? '#d4edda' : '#f8d7da',
+                              color: user.status ? '#155724' : '#721c24',
+                            }}
+                          >
+                            {user.status ? '✓ Active' : '✗ Inactive'}
+                          </Box>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </Sheet>
+            )}
+          </Box>
+
+          {/* Chat Overlay */}
+          {ischatmode && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+              }}
+            >
+              <Chat />
+            </Box>
+          )}
+        </Box>
       </Sheet>
 
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         onClose={() => setSnackbar({ ...snackbar, open: false })}

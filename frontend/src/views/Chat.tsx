@@ -134,7 +134,7 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', flex: 1, bgcolor: '#e5ddd5' }}>
+    <Box sx={{ display: 'flex', height: '100%', flex: 1, bgcolor: '#e5ddd5' }}>
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column'}}>
         
         
@@ -196,12 +196,12 @@ const Chat: React.FC = () => {
                       sx={{ textAlign: 'center', width: '100%' }}
                     >
                       {msg.sender === currentUser
-  ? msg.message.includes('joined')
-    ? 'You joined'
-    : msg.message.includes('left')
-    ? 'You left'
-    : msg.message
-  : msg.message.replace('the room', '')}
+                        ? msg.message.includes('joined')
+                          ? 'You joined'
+                          : msg.message.includes('left')
+                          ? 'You left'
+                          : msg.message
+                        : msg.message.replace('the room', '')}
                     </Typography>
                   ) : (
                     <Sheet
