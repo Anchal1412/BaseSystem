@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchUsers, logout } from '../controllers/authController';
 import { User } from '../models/User';
+import Chat from './Chat';
 
 import {
   Box,
@@ -20,6 +21,7 @@ const Dashboard: React.FC = () => {
     message: '',
     color: 'neutral' as 'neutral' | 'success' | 'danger',
   });
+  const [ischatmode, setisChatMode] = useState(false);
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -88,7 +90,7 @@ const Dashboard: React.FC = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        height: '100vh',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         p: 3,
       }}
@@ -113,11 +115,11 @@ const Dashboard: React.FC = () => {
             gap: 2,
           }}
         >
-          <Typography level="h2">Users Dashboard</Typography>
+          <Typography level="h2">{ischatmode ? 'Chat' : 'Users Dashboard'}</Typography>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button onClick={() => navigate('/chat')}>
-              💬 Chat
+            <Button onClick={() => setisChatMode((prev) => !prev)}>
+              {ischatmode ? 'Users Dashboard' : '💬 Chat'}
             </Button>
 
             <Button onClick={handleRefresh}>
@@ -131,7 +133,9 @@ const Dashboard: React.FC = () => {
         </Box>
 
         {/* Table */}
-        {users.length === 0 ? (
+        {ischatmode ? (
+          <Chat />
+        ) : users.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 5 }}>
             <Typography>No users found.</Typography>
           </Box>

@@ -16,8 +16,8 @@ export class ChatService {
 
   addUserToRoom(
     roomId: string,
-    user: { socketId: string; userId: string; name: string })
-  {
+    user: { socketId: string; userId: string; name: string },
+  ) {
     if (!this.rooms.has(roomId)) {
       this.rooms.set(roomId, { users: new Map() });
     }

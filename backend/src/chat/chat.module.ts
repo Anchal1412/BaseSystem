@@ -6,7 +6,7 @@ import { ChatService } from './chat.service';
 @Module({
   imports: [
     JwtModule.register({
-      secret: 'mySecretKey', // ✅ SAME SECRET (FIX HERE 🔥)
+      secret: 'mySecretKey',
       signOptions: { expiresIn: '1d' },
     }),
   ],

@@ -134,27 +134,10 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', bgcolor: '#e5ddd5' }}>
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ display: 'flex', height: '100vh', flex: 1, bgcolor: '#e5ddd5' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column'}}>
         
-        {/*  HEADER */}
-        <Sheet
-          sx={{
-            p: 2,
-            bgcolor: '#075e54',
-            color: '#fff',
-            display: 'flex',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Box>
-            <Typography level="h4">Chat Room</Typography>
-            <Typography level="body-sm" sx={{ color: '#fff' }}>
-              {roomUsers.length} online
-            </Typography>
-          </Box>
-        </Sheet>
-
+        
         {/* USERS */}
         <Sheet
           sx={{
@@ -167,9 +150,11 @@ const Chat: React.FC = () => {
         >
           {roomUsers.map((user) => (
             <Chip
-              key={user.socketId}
+              key={user.userId}
               size="sm"
               variant={user.name === currentUser ? 'solid' : 'soft'}
+             
+              
               color={user.name === currentUser ? 'success' : 'primary'}
             >
               {user.name} {user.name === currentUser && '(You)'}
@@ -183,6 +168,7 @@ const Chat: React.FC = () => {
             flex: 1,
             overflowY: 'auto',
             p: 2,
+            minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
             gap: 1.5,
@@ -209,7 +195,13 @@ const Chat: React.FC = () => {
                       level="body-xs"
                       sx={{ textAlign: 'center', width: '100%' }}
                     >
-                      {msg.message}
+                      {msg.sender === currentUser
+  ? msg.message.includes('joined')
+    ? 'You joined'
+    : msg.message.includes('left')
+    ? 'You left'
+    : msg.message
+  : msg.message.replace('the room', '')}
                     </Typography>
                   ) : (
                     <Sheet
