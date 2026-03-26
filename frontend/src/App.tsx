@@ -4,7 +4,7 @@ import Home from './views/Home';
 import Signup from './views/SignupView';
 import Login from './views/LoginView';
 import Dashboard from './views/Dashboard';
-import Chat from './views/Chat';
+// import Chat from './views/Chat';
 
 
 const App: React.FC = () => {
@@ -15,7 +15,7 @@ const App: React.FC = () => {
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/chat" element={<Chat />} />
+        {/* <Route path="/chat" element={<Chat />} /> */}
       </Routes>
     </BrowserRouter>
   );

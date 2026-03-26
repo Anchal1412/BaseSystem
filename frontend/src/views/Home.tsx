@@ -60,7 +60,7 @@ export default function Home() {
             textShadow: '0 2px 10px rgba(0,0,0,0.2)',
           }}
         >
-          Welcome to BaseSystem
+          Welcome to PulseConnect
         </Typography>
 
         <Typography
@@ -71,7 +71,7 @@ export default function Home() {
             textShadow: '0 1px 5px rgba(0,0,0,0.1)',
           }}
         >
-          A modern authentication system built with React and NestJS
+            An intelligent real-time communication platform with live user presence tracking. 
         </Typography>
 
         {/* Buttons */}

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchUsers, logout } from '../controllers/authController';
 import { User } from '../models/User';
@@ -7,6 +7,7 @@ import Chat from './Chat';
 import ChatIcon from '@mui/icons-material/Chat';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { io, Socket } from 'socket.io-client';
 
 import {
   Box,
@@ -17,7 +18,21 @@ import {
   Snackbar,
 } from '@mui/joy';
 
+interface Message {
+  message: string;
+  sender: string;
+  senderId: string;
+  timestamp: Date;
+  isSystemMessage?: boolean;
+}
+interface RoomUser {
+  socketIds: string[];
+  userId: string;
+  name: string;
+}
+
 const Dashboard: React.FC = () => {
+  const socketRef = useRef<Socket | null>(null);
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [snackbar, setSnackbar] = useState({
@@ -26,6 +41,10 @@ const Dashboard: React.FC = () => {
     color: 'neutral' as 'neutral' | 'success' | 'danger',
   });
   const [ischatmode, setisChatMode] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+const [roomUsers, setRoomUsers] = useState<RoomUser[]>([]);
+const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+const [currentUser, setCurrentUser] = useState('');
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -54,9 +73,85 @@ const Dashboard: React.FC = () => {
 
     loadUsers();
   }, [navigate]);
+  // SOCKET CONNECTION
+    useEffect(() => {
+      const token = localStorage.getItem('token');
+  
+      if (!token) {
+        setSnackbar({
+          open: true,
+          message: 'No token found. Please login again.',
+          color: 'danger',
+        });
+        return;
+      }
+  
+      // extract name from JWT
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setCurrentUser(payload.name);
+      } catch (err) {
+        console.error('Invalid token');
+      }
+  
+      socketRef.current = io('http://localhost:3001', {
+        auth: {
+          token: token.trim(),
+        },
+      });
+      socketRef.current?.onAny((event, data) => {
+  console.log('EVENT:', event, data);
+});
+  
+      socketRef.current.on('connect', () => {
+        // setSnackbar({
+        //   open: true,
+        //   message: 'Connected to chat server',
+        //   color: 'success',
+        // });
+  
+        socketRef.current?.emit('join_room', { roomId: 'room1' });
+      });
+  
+      socketRef.current.on('disconnect', () => {
+        setSnackbar({
+          open: true,
+          message: 'Disconnected from chat server',
+          color: 'danger',
+        });
+      });
+  
+      socketRef.current.on('receive_message', (data: Message) => {
+        setMessages((prev) => [...prev, data]);
+      });
+  
+      socketRef.current.on(
+        'room_users',
+        (data: { users: RoomUser[]; count: number }) => {
+          setRoomUsers(data.users);
+        }
+      );
+      socketRef.current.on('online_users', (users: any[]) => {
+        const ids = users.map((u) => u.userId);
+        setOnlineUsers(ids);
+      });
+  
+      socketRef.current.on('error', (error) => {
+        setSnackbar({
+          open: true,
+          message: `Error: ${error}`,
+          color: 'danger',
+        });
+      });
+  
+      return () => {
+        socketRef.current?.disconnect();
+      };
+    }, []);
 
   const handleLogout = async () => {
     try {
+      socketRef.current?.emit('leave_room', { roomId: 'room1' });
       const token = localStorage.getItem('token') || '';
       await logout(token);
       localStorage.removeItem('token');
@@ -125,8 +220,20 @@ const Dashboard: React.FC = () => {
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button  startDecorator={<ChatIcon />} onClick={() => setisChatMode((prev) => !prev)}>
-              {ischatmode ? 'Users Dashboard' : ' Chat'}
+            <Button
+              startDecorator={<ChatIcon />}
+              onClick={() => {
+                setisChatMode((prev) => !prev); 
+                if (!ischatmode) {
+                  setSnackbar({
+                    open: true,
+                    message: 'Connected to chat server',
+                    color: 'success',
+                  });
+                }
+              }}
+            >
+              {ischatmode ? 'Users Dashboard' : 'Chat'}
             </Button>
 
             <Button  startDecorator={<RefreshIcon />} onClick={handleRefresh}>
@@ -164,28 +271,32 @@ const Dashboard: React.FC = () => {
                   </thead>
 
                   <tbody>
-                    {users.map((user) => (
-                      <tr key={user._id}>
-                        <td>{user.name}</td>
-                        <td>{user.email}</td>
-                        <td>
-                          <Box
-                            sx={{
-                              display: 'inline-block',
-                              px: 1.5,
-                              py: 0.5,
+                      
+                    {users.map((user) => {
+                      const isOnline = onlineUsers.some((id)=> String(id) === String (user._id));
+                      return (
+                        <tr key={user._id}>
+                          <td>{user.name}</td>
+                          <td>{user.email}</td>
+                          <td>
+                            <Box
+                              sx={{
+                                display: 'inline-block',
+                                px: 1.5,
+                                py: 0.5,
                               borderRadius: '20px',
                               fontSize: '0.8rem',
                               fontWeight: 600,
-                              bgcolor: user.status ? '#d4edda' : '#f8d7da',
-                              color: user.status ? '#155724' : '#721c24',
+                              bgcolor: isOnline ? '#d4edda' : '#f8d7da',
+                              color: isOnline ? '#155724' : '#721c24',
                             }}
                           >
-                            {user.status ? '✓ Active' : '✗ Inactive'}
+                            {isOnline ? 'Online' : 'Offline'}
                           </Box>
                         </td>
                       </tr>
-                    ))}
+                    );
+                  })}
                   </tbody>
                 </Table>
               </Sheet>
@@ -203,7 +314,13 @@ const Dashboard: React.FC = () => {
                 height: '100%',
               }}
             >
-              <Chat />
+              <Chat 
+              socket = {socketRef.current}
+              messages = {messages}
+              setMessages = {setMessages}
+              roomUsers = {roomUsers}
+              currentUser = {currentUser}
+              />
             </Box>
           )}
         </Box>

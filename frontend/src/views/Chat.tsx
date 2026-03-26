@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
 import {
   Box,
   Button,
@@ -19,63 +18,52 @@ interface Message {
 }
 
 interface RoomUser {
-  socketId: string;
+  socketIds: string[];
   userId: string;
   name: string;
 }
 
-const Chat: React.FC = () => {
-  const socketRef = useRef<Socket | null>(null);
+interface ChatProps {
+  socket: any;
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  roomUsers: RoomUser[];
+  currentUser: string;
+}
+
+const Chat: React.FC<ChatProps> = ({
+  socket,
+  messages,
+  setMessages,
+  roomUsers,
+  currentUser,
+}) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [roomUsers, setRoomUsers] = useState<RoomUser[]>([]);
-  const [currentUser, setCurrentUser] = useState('');
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     color: 'neutral' as 'neutral' | 'success' | 'danger',
   });
 
-  // SOCKET CONNECTION
+  // ✅ RECEIVE MESSAGE
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    if (!socket) return;
 
-    if (!token) {
-      setSnackbar({
-        open: true,
-        message: 'No token found. Please login again.',
-        color: 'danger',
-      });
-      return;
-    }
-
-    // extract name from JWT
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setCurrentUser(payload.name);
-    } catch (err) {
-      console.error('Invalid token');
-    }
-
-    socketRef.current = io('http://localhost:3001', {
-      auth: {
-        token: token.trim(),
-      },
+    socket.on('receive_message', (data: Message) => {
+      setMessages((prev) => [...prev, data]);
     });
 
-    socketRef.current.on('connect', () => {
+    socket.on('connect', () => {
       setSnackbar({
         open: true,
         message: 'Connected to chat server',
         color: 'success',
       });
-
-      socketRef.current?.emit('join_room', { roomId: 'room1' });
     });
 
-    socketRef.current.on('disconnect', () => {
+    socket.on('disconnect', () => {
       setSnackbar({
         open: true,
         message: 'Disconnected from chat server',
@@ -83,18 +71,7 @@ const Chat: React.FC = () => {
       });
     });
 
-    socketRef.current.on('receive_message', (data: Message) => {
-      setMessages((prev) => [...prev, data]);
-    });
-
-    socketRef.current.on(
-      'room_users',
-      (data: { users: RoomUser[]; count: number }) => {
-        setRoomUsers(data.users);
-      }
-    );
-
-    socketRef.current.on('error', (error) => {
+    socket.on('error', (error: any) => {
       setSnackbar({
         open: true,
         message: `Error: ${error}`,
@@ -103,9 +80,12 @@ const Chat: React.FC = () => {
     });
 
     return () => {
-      socketRef.current?.disconnect();
+      socket.off('receive_message');
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('error');
     };
-  }, []);
+  }, [socket, setMessages]);
 
   // AUTO SCROLL
   useEffect(() => {
@@ -117,7 +97,7 @@ const Chat: React.FC = () => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
-    socketRef.current?.emit('send_message', {
+    socket?.emit('send_message', {
       roomId: 'room1',
       message: inputMessage,
     });
@@ -135,8 +115,7 @@ const Chat: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', height: '100%', flex: 1, bgcolor: '#e5ddd5' }}>
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column'}}>
-        
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         
         {/* USERS */}
         <Sheet
@@ -153,8 +132,6 @@ const Chat: React.FC = () => {
               key={user.userId}
               size="sm"
               variant={user.name === currentUser ? 'solid' : 'soft'}
-             
-              
               color={user.name === currentUser ? 'success' : 'primary'}
             >
               {user.name} {user.name === currentUser && '(You)'}
@@ -176,7 +153,7 @@ const Chat: React.FC = () => {
         >
           {messages.length === 0 ? (
             <Typography textAlign="center">
-              Start chatting 
+              Start chatting
             </Typography>
           ) : (
             messages.map((msg, idx) => {
@@ -210,7 +187,7 @@ const Chat: React.FC = () => {
                         borderRadius: 'lg',
                         maxWidth: '60%',
                         bgcolor: isMe ? '#25d366' : '#fff',
-                        color: isMe ? '#000' : '#000',
+                        color: '#000',
                       }}
                     >
                       {!isMe && (
@@ -252,7 +229,7 @@ const Chat: React.FC = () => {
               sx={{ flex: 1 }}
             />
             <Button type="submit" disabled={!inputMessage.trim()}>
-              Send 
+              Send
             </Button>
           </Box>
         </Sheet>

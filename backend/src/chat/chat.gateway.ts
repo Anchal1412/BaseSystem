@@ -61,6 +61,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       data.userId = payload.sub;
       data.email = payload.email;
       data['name'] = payload.name;
+      const users = this.chatService.getRoomUsers('room1');
+      this.server.emit('online_users', users);
 
       if (DEBUG) console.log(`User connected: ${payload.email}`);
     } catch (error) {
@@ -79,6 +81,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (DEBUG) console.log(`User disconnected: ${data?.email}`);
 
     this.chatService.removeUserFromAllRooms(client.id);
+    const users = this.chatService.getRoomUsers('room1');
+    this.server.emit('online_users', users);
   }
 
   // JOIN ROOM
@@ -105,11 +109,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       isSystemMessage: true,
     });
 
+    // 👇 GLOBAL ROOM USERS EMIT
     const roomUsers = this.chatService.getRoomUsers(roomId);
     this.server.to(roomId).emit('room_users', {
       users: roomUsers,
       count: roomUsers.length,
     });
+    this.server.emit('online_users', roomUsers);
 
     if (DEBUG) console.log(`User ${clientData.email} joined room ${roomId}`);
   }
@@ -120,9 +126,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const { roomId } = payload;
     const clientData = this.getClientData(client);
 
-    client.leave(roomId);
-    this.chatService.removeUserFromRoom(roomId, client.id);
-
     this.server.to(roomId).emit('receive_message', {
       message: `${clientData.name} left the room`,
       sender: 'System',
@@ -130,6 +133,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       timestamp: new Date(),
       isSystemMessage: true,
     });
+    this.chatService.removeUserFromRoom(roomId, client.id);
+    client.leave(roomId);
 
     const roomUsers = this.chatService.getRoomUsers(roomId);
     this.server.to(roomId).emit('room_users', {
